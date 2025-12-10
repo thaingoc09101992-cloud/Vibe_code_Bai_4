@@ -1,0 +1,196 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Enums
+enum UserRole {
+  reader
+  librarian
+  admin
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  active
+  disabled
+
+  @@map("user_status")
+}
+
+enum BorrowStatus {
+  pending
+  approved
+  rejected
+  borrowed
+  returned
+  overdue
+
+  @@map("borrow_status")
+}
+
+enum ReturnStatus {
+  pending
+  confirmed
+
+  @@map("return_status")
+}
+
+enum BookCondition {
+  normal
+  damaged
+  lost
+
+  @@map("book_condition")
+}
+
+enum FineStatus {
+  unpaid
+  pending_confirmation
+  paid
+  rejected
+
+  @@map("fine_status")
+}
+
+// Models
+model Profile {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String   @db.VarChar(50)
+  email        String   @unique @db.VarChar(255)
+  password     String   @db.VarChar(255)
+  phone        String?  @db.VarChar(20)
+  address      String?  @db.VarChar(255)
+  role         UserRole @default(reader)
+  status       UserStatus @default(active)
+  borrowCount  Int      @default(0) @map("borrow_count")
+  totalFines   Decimal  @default(0) @map("total_fines") @db.Decimal(10, 2)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  borrowRequests BorrowRequest[]
+  fines          Fine[]
+
+  @@map("profiles")
+}
+
+model BookCategory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(50)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  books Book[]
+
+  @@map("book_categories")
+}
+
+model Book {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title           String   @db.VarChar(100)
+  author          String   @db.VarChar(100)
+  year            Int
+  isbn            String?  @unique @db.VarChar(13)
+  categoryId      String   @map("category_id") @db.Uuid
+  description     String   @db.VarChar(255)
+  totalCopies     Int      @default(0) @map("total_copies")
+  availableCopies Int      @default(0) @map("available_copies")
+  borrowedCopies  Int      @default(0) @map("borrowed_copies")
+  lostCopies      Int      @default(0) @map("lost_copies")
+  damagedCopies   Int      @default(0) @map("damaged_copies")
+  borrowCount     Int      @default(0) @map("borrow_count")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  category       BookCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  borrowRequests BorrowRequest[]
+
+  @@map("books")
+}
+
+model BorrowRequest {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  bookId          String        @map("book_id") @db.Uuid
+  borrowDate      DateTime?     @map("borrow_date") @db.Timestamptz()
+  dueDate         DateTime?     @map("due_date") @db.Timestamptz()
+  returnDate      DateTime?     @map("return_date") @db.Timestamptz()
+  status          BorrowStatus  @default(pending)
+  rejectionReason String?       @map("rejection_reason") @db.Text
+  extensionCount  Int           @default(0) @map("extension_count")
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  user          Profile        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book          Book           @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  returnRequest ReturnRequest?
+  fines         Fine[]
+
+  @@map("borrow_requests")
+}
+
+model ReturnRequest {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  borrowRequestId   String         @unique @map("borrow_request_id") @db.Uuid
+  requestDate       DateTime       @default(now()) @map("request_date") @db.Timestamptz()
+  confirmationDate  DateTime?      @map("confirmation_date") @db.Timestamptz()
+  bookCondition     BookCondition? @map("book_condition")
+  notes             String?        @db.Text
+  status            ReturnStatus   @default(pending)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  borrowRequest BorrowRequest @relation(fields: [borrowRequestId], references: [id], onDelete: Cascade)
+
+  @@map("return_requests")
+}
+
+model FineLevel {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(25)
+  amount      Decimal  @db.Decimal(10, 2)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  fines Fine[]
+
+  @@map("fine_levels")
+}
+
+model Fine {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String     @map("user_id") @db.Uuid
+  borrowRequestId  String     @map("borrow_request_id") @db.Uuid
+  fineLevelId      String     @map("fine_level_id") @db.Uuid
+  reason           String     @db.VarChar(100)
+  amount           Decimal    @db.Decimal(10, 2)
+  fineDate         DateTime   @default(now()) @map("fine_date") @db.Date
+  paymentDate      DateTime?  @map("payment_date") @db.Date
+  status           FineStatus @default(unpaid)
+  rejectionReason  String?    @map("rejection_reason") @db.Text
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime   @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  user          Profile       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  borrowRequest BorrowRequest @relation(fields: [borrowRequestId], references: [id], onDelete: Cascade)
+  fineLevel     FineLevel     @relation(fields: [fineLevelId], references: [id], onDelete: Restrict)
+
+  @@map("fines")
+}

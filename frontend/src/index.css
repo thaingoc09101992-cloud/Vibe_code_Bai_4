@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans text-ink-800 bg-paper-50 antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  /* Card components */
+  .card {
+    @apply bg-white rounded-2xl shadow-soft transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-soft-lg hover:-translate-y-1;
+  }
+
+  /* Button components */
+  .btn {
+    @apply px-6 py-3 rounded-xl font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply btn bg-ink-800 text-white hover:bg-ink-900 focus:ring-ink-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-wood-100 text-wood-800 hover:bg-wood-200 focus:ring-wood-500;
+  }
+
+  .btn-accent {
+    @apply btn bg-accent-600 text-white hover:bg-accent-700 focus:ring-accent-500;
+  }
+
+  .btn-outline {
+    @apply btn border-2 border-ink-200 text-ink-700 hover:border-ink-800 hover:bg-ink-800 hover:text-white;
+  }
+
+  /* Input components */
+  .input {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-paper-200 bg-white text-ink-800 placeholder:text-ink-400 focus:outline-none focus:border-ink-500 focus:ring-2 focus:ring-ink-200 transition-all duration-200;
+  }
+
+  /* Container */
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+@layer utilities {
+  /* Smooth scrolling */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+
+  /* Text balance for headings */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-md;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-paper-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-paper-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-paper-400;
+}
+
+/* Selection color */
+::selection {
+  @apply bg-wood-200 text-wood-900;
+}
